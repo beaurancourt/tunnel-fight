@@ -129,6 +129,249 @@ actor:
       target: nearest_enemy
 ```
 
+## Example: Spearwall Formation
+
+A classic defensive formation: shield-bearers hold the front line while polearms strike from behind.
+
+```yaml
+name: Spearwall vs Zombies
+iterations: 10000
+
+zone_capacity:
+  ranged: ~
+  reach: 10
+  melee: 10
+
+side1:
+  # Front line - shield wall (guard only, AC 21 when guarding)
+  - name: Mace 1
+    hp: 1d6
+    ac: 19
+    attack_bonus: 0
+    damage: 1d6
+    range: melee
+    start_zone: melee
+    frontage: 3
+    apl:
+      - action: guard
+
+  - name: Mace 2
+    hp: 1d6
+    ac: 19
+    attack_bonus: 0
+    damage: 1d6
+    range: melee
+    start_zone: melee
+    frontage: 3
+    apl:
+      - action: guard
+
+  - name: Mace 3
+    hp: 1d6
+    ac: 19
+    attack_bonus: 0
+    damage: 1d6
+    range: melee
+    start_zone: melee
+    frontage: 3
+    apl:
+      - action: guard
+
+  # Polearm line - attack from reach, only advance if maces are dead
+  - name: Polearm 1
+    hp: 1d6
+    ac: 14
+    attack_bonus: 2
+    damage: 1d8+2
+    range: reach
+    start_zone: reach
+    frontage: 3
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: nearest_enemy
+      - action: move
+        if: ally.count < 3
+        target: nearest_enemy
+
+  - name: Polearm 2
+    hp: 1d6
+    ac: 14
+    attack_bonus: 2
+    damage: 1d8+2
+    range: reach
+    start_zone: reach
+    frontage: 3
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: nearest_enemy
+      - action: move
+        if: ally.count < 3
+        target: nearest_enemy
+
+  - name: Polearm 3
+    hp: 1d6
+    ac: 14
+    attack_bonus: 2
+    damage: 1d8+2
+    range: reach
+    start_zone: reach
+    frontage: 3
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: nearest_enemy
+      - action: move
+        if: ally.count < 3
+        target: nearest_enemy
+
+side2:
+  # Zombies with frontage 5 - only 2 can engage at once
+  # 2 in melee (already engaging)
+  - name: Zombie 1
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    start_zone: melee
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+
+  - name: Zombie 2
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    start_zone: melee
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+
+  # 2 in reach (next wave)
+  - name: Zombie 3
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    start_zone: reach
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+
+  - name: Zombie 4
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    start_zone: reach
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+
+  # 6 in ranged (reserves)
+  - name: Zombie 5
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+
+  - name: Zombie 6
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+
+  - name: Zombie 7
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+
+  - name: Zombie 8
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+
+  - name: Zombie 9
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+
+  - name: Zombie 10
+    hp: 2d8
+    ac: 12
+    attack_bonus: 1
+    damage: 1d8
+    frontage: 5
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: random_enemy
+      - action: move
+        target: nearest_enemy
+```
+
+**Key tactics:**
+- **Maces guard** (AC 21) - zombies need natural 20 to hit
+- **Polearms attack from reach** - safe behind the shield wall
+- **Frontage limits engagement** - only 2 zombies (frontage 5) fit in melee at once
+- **Polearms hold position** (`ally.count < 3`) - only advance when all maces are dead
+
 ## Output
 
 ### Statistics (over many runs)

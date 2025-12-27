@@ -57,6 +57,7 @@ side1:
     speed: 1
     range: melee
     start_zone: melee
+    frontage: 3        # Space occupied in zones (default: 3)
     apl:
       - action: attack
         if: enemy.in_range
@@ -72,7 +73,17 @@ side2:
     damage: 1d6+2
     speed: 1
     range: melee
+    frontage: 3
 ```
+
+## Frontage System
+
+Zones have capacity limits (default: 10 for melee/reach, infinite for ranged). Each actor has a `frontage` value (default: 3) representing how much space they occupy.
+
+Example: With melee capacity of 10:
+- 3 fighters (frontage 3 each) = 9, fits
+- 2 zombies (frontage 5 each) = 10, fits
+- 3 zombies (frontage 5 each) = 15, doesn't fit
 
 ## Action Priority Lists (APL)
 
@@ -80,10 +91,11 @@ Each turn, actors get 1 move + 1 attack. The APL is scanned to find the first va
 
 ### Actions
 
-| Action   | Description                        |
-|----------|------------------------------------|
-| `attack` | Attack an enemy (must be in range) |
-| `move`   | Move toward a target or direction  |
+| Action   | Description                            |
+|----------|----------------------------------------|
+| `attack` | Attack an enemy (must be in range)     |
+| `guard`  | Raise AC by 2 until next turn          |
+| `move`   | Move toward a target or direction      |
 
 ### Conditions
 

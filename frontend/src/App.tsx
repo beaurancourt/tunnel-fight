@@ -139,7 +139,7 @@ function Docs({ onClose }: { onClose: () => void }) {
               <tr><td><code>attack_bonus</code></td><td>Added to d20 attack roll</td></tr>
               <tr><td><code>damage</code></td><td>Damage dice (e.g., 1d8+3)</td></tr>
               <tr><td><code>speed</code></td><td>Zones moved per turn (default: 1)</td></tr>
-              <tr><td><code>range</code></td><td>melee (1 zone), reach (2), ranged (6)</td></tr>
+              <tr><td><code>range</code></td><td>melee (adjacent), reach (2 zones), ranged (2+ zones)</td></tr>
               <tr><td><code>start_zone</code></td><td>ranged (default), reach, melee</td></tr>
             </tbody>
           </table>

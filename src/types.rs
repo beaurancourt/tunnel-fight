@@ -81,11 +81,15 @@ pub enum WeaponRange {
 }
 
 impl WeaponRange {
-    pub fn max_distance(&self) -> u32 {
+    /// Check if this weapon can hit a target at the given distance
+    /// - Melee: adjacent only (distance == 1)
+    /// - Reach: exactly 2 zones away (distance == 2)
+    /// - Ranged: any zone except adjacent (distance >= 2)
+    pub fn can_hit_at_distance(&self, distance: u32) -> bool {
         match self {
-            WeaponRange::Melee => 1,
-            WeaponRange::Reach => 2,
-            WeaponRange::Ranged => 6,
+            WeaponRange::Melee => distance == 1,
+            WeaponRange::Reach => distance == 2,
+            WeaponRange::Ranged => distance >= 2,
         }
     }
 }
@@ -285,7 +289,7 @@ impl Actor {
 
     pub fn can_attack(&self, target: &Actor) -> bool {
         let distance = self.zone.distance_to(&target.zone);
-        distance <= self.range.max_distance()
+        self.range.can_hit_at_distance(distance)
     }
 }
 

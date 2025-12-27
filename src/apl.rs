@@ -66,7 +66,7 @@ impl<'a> AplContext<'a> {
         let actor_zone = self.actor.zone;
         let actor_range = self.actor.range;
         self.enemies()
-            .filter(move |e| actor_zone.distance_to(&e.zone) <= actor_range.max_distance())
+            .filter(move |e| actor_range.can_hit_at_distance(actor_zone.distance_to(&e.zone)))
     }
 
     pub fn has_enemy_in_range(&self) -> bool {

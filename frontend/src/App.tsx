@@ -126,12 +126,13 @@ function Docs({ onClose }: { onClose: () => void }) {
           <h3>Zone-Based Positioning</h3>
           <p>Combat uses a linear 6-zone system:</p>
           <pre>Side1 Ranged → Side1 Reach → Side1 Melee → Side2 Melee → Side2 Reach → Side2 Ranged</pre>
-          <p>Each zone has capacity limits (configurable):</p>
+          <p>Zones have capacity in "frontage units". Each actor has a <code>frontage</code> (default 3) that determines space occupied. Default capacities:</p>
           <ul>
-            <li><strong>Ranged:</strong> Infinite (default)</li>
-            <li><strong>Reach:</strong> 3 (default)</li>
-            <li><strong>Melee:</strong> 3 (default)</li>
+            <li><strong>Ranged:</strong> Infinite</li>
+            <li><strong>Reach:</strong> 10</li>
+            <li><strong>Melee:</strong> 10</li>
           </ul>
+          <p>Example: 3 fighters (frontage 3) = 9, fits in melee. 2 zombies (frontage 5) = 10, fits. 3 zombies = 15, doesn't fit.</p>
         </section>
 
         <section>
@@ -146,6 +147,7 @@ function Docs({ onClose }: { onClose: () => void }) {
               <tr><td><code>speed</code></td><td>Zones moved per turn (default: 1)</td></tr>
               <tr><td><code>range</code></td><td>melee (adjacent), reach (2 zones), ranged (2+ zones)</td></tr>
               <tr><td><code>start_zone</code></td><td>ranged (default), reach, melee</td></tr>
+              <tr><td><code>frontage</code></td><td>Space occupied in zones (default: 3)</td></tr>
               <tr><td><code>initiative_modifier</code></td><td>Bonus to initiative roll (default: 0)</td></tr>
             </tbody>
           </table>
@@ -232,8 +234,8 @@ function Docs({ onClose }: { onClose: () => void }) {
           <h3>Zone Capacity Config</h3>
           <pre>{`zone_capacity:
   ranged: ~      # null = infinite
-  reach: 3
-  melee: 3`}</pre>
+  reach: 10
+  melee: 10`}</pre>
         </section>
       </div>
     </div>

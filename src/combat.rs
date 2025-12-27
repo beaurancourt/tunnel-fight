@@ -90,17 +90,18 @@ impl CombatSimulator {
         }
     }
 
-    fn zone_has_capacity(&self, zone: Zone, exclude_actor_id: usize) -> bool {
+    fn zone_has_capacity_for(&self, zone: Zone, actor_id: usize, actor_frontage: u32) -> bool {
         let capacity = self.zone_capacity.capacity_for(zone);
         match capacity {
             None => true, // Infinite capacity
             Some(cap) => {
-                let count = self
+                let current_frontage: u32 = self
                     .actors
                     .iter()
-                    .filter(|a| a.zone == zone && a.is_alive() && a.id != exclude_actor_id)
-                    .count() as u32;
-                count < cap
+                    .filter(|a| a.zone == zone && a.is_alive() && a.id != actor_id)
+                    .map(|a| a.frontage)
+                    .sum();
+                current_frontage + actor_frontage <= cap
             }
         }
     }
@@ -111,8 +112,8 @@ impl CombatSimulator {
             .any(|a| a.zone == zone && a.is_alive() && a.side != actor_side)
     }
 
-    fn can_enter_zone(&self, zone: Zone, actor_id: usize, actor_side: Side) -> bool {
-        self.zone_has_capacity(zone, actor_id) && !self.zone_has_enemies(zone, actor_side)
+    fn can_enter_zone(&self, zone: Zone, actor_id: usize, actor_side: Side, actor_frontage: u32) -> bool {
+        self.zone_has_capacity_for(zone, actor_id, actor_frontage) && !self.zone_has_enemies(zone, actor_side)
     }
 
     pub fn run(&mut self, rng: &mut impl Rng) -> CombatResult {
@@ -448,6 +449,7 @@ impl CombatSimulator {
         let from_zone = actor.zone;
         let speed = actor.speed;
         let actor_side = actor.side;
+        let actor_frontage = actor.frontage;
 
         let to_zone = match direction {
             MoveDirection::Toward(target_id) => {
@@ -455,7 +457,7 @@ impl CombatSimulator {
                 let mut current = from_zone;
                 for _ in 0..speed {
                     if let Some(next) = current.toward(&target.zone) {
-                        if self.can_enter_zone(next, actor_id, actor_side) {
+                        if self.can_enter_zone(next, actor_id, actor_side, actor_frontage) {
                             current = next;
                         } else {
                             break;
@@ -470,7 +472,7 @@ impl CombatSimulator {
                 let mut current = from_zone;
                 for _ in 0..speed {
                     if let Some(next) = current.toward(&zone) {
-                        if self.can_enter_zone(next, actor_id, actor_side) {
+                        if self.can_enter_zone(next, actor_id, actor_side, actor_frontage) {
                             current = next;
                         } else {
                             break;
@@ -489,7 +491,7 @@ impl CombatSimulator {
                 let mut current = from_zone;
                 for _ in 0..speed {
                     if let Some(next) = current.toward(&target_zone) {
-                        if self.can_enter_zone(next, actor_id, actor_side) {
+                        if self.can_enter_zone(next, actor_id, actor_side, actor_frontage) {
                             current = next;
                         } else {
                             break;
@@ -508,7 +510,7 @@ impl CombatSimulator {
                 let mut current = from_zone;
                 for _ in 0..speed {
                     if let Some(next) = current.toward(&target_zone) {
-                        if self.can_enter_zone(next, actor_id, actor_side) {
+                        if self.can_enter_zone(next, actor_id, actor_side, actor_frontage) {
                             current = next;
                         } else {
                             break;

@@ -15,18 +15,24 @@ Linear 6-zone system (no grid):
 Side 1 Ranged → Side 1 Reach → Side 1 Melee → Side 2 Melee → Side 2 Reach → Side 2 Ranged
 ```
 
-### Zone Capacity
-Each zone has a configurable capacity limit:
-- **Ranged zones:** Infinite by default (null/~)
-- **Reach zones:** 3 by default
-- **Melee zones:** 3 by default
+### Zone Capacity & Frontage
+Zones have capacity in "frontage units". Each actor has a frontage (default 3) that determines how much space they occupy. An actor can only enter a zone if their frontage fits in the remaining capacity.
 
-Actors cannot move into a full zone. Configure in YAML:
+**Default capacities:**
+- **Ranged zones:** Infinite (null/~)
+- **Reach zones:** 10
+- **Melee zones:** 10
+
+**Example:** With melee capacity 10:
+- 3 fighters (frontage 3 each) = 9 frontage, fits
+- 2 zombies (frontage 5 each) = 10 frontage, fits
+- 3 zombies would need 15 frontage, doesn't fit
+
 ```yaml
 zone_capacity:
   ranged: ~      # null = infinite
-  reach: 3
-  melee: 3
+  reach: 10
+  melee: 10
 ```
 
 ### Actor Attributes
@@ -35,6 +41,7 @@ zone_capacity:
 - Movement speed (zones per turn)
 - Weapon range (melee/reach/ranged)
 - Starting zone (ranged/reach/melee) - defaults to ranged
+- Frontage (default 3) - space occupied in a zone
 
 ### Action Priority Lists (APL)
 
@@ -113,6 +120,7 @@ actor:
   speed: 1
   range: melee
   start_zone: melee    # optional: ranged (default), reach, melee
+  frontage: 3          # optional: space occupied (default: 3)
   apl:
     - action: attack
       if: enemy.in_range

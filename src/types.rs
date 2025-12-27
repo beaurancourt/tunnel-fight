@@ -263,8 +263,14 @@ pub struct ActorTemplate {
     pub start_zone: StartingZone,
     #[serde(default)]
     pub initiative_modifier: i32,
+    #[serde(default = "default_frontage")]
+    pub frontage: u32,
     #[serde(default)]
     pub apl: Vec<AplEntry>,
+}
+
+fn default_frontage() -> u32 {
+    3
 }
 
 fn default_speed() -> u32 {
@@ -307,6 +313,7 @@ pub struct Actor {
     pub range: WeaponRange,
     pub zone: Zone,
     pub initiative_modifier: i32,
+    pub frontage: u32,
     pub apl: Vec<AplEntry>,
 }
 
@@ -334,6 +341,7 @@ impl Actor {
             range: template.range,
             zone,
             initiative_modifier: template.initiative_modifier,
+            frontage: template.frontage,
             apl: template.apl.clone(),
         }
     }
@@ -348,6 +356,7 @@ impl Actor {
     }
 }
 
+/// Zone capacity in "frontage units" - actors occupy space based on their frontage
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ZoneCapacities {
     #[serde(default = "default_ranged_capacity")]
@@ -362,8 +371,8 @@ impl Default for ZoneCapacities {
     fn default() -> Self {
         ZoneCapacities {
             ranged: None,
-            reach: 3,
-            melee: 3,
+            reach: 10,
+            melee: 10,
         }
     }
 }
@@ -373,11 +382,11 @@ fn default_ranged_capacity() -> Option<u32> {
 }
 
 fn default_reach_capacity() -> u32 {
-    3
+    10
 }
 
 fn default_melee_capacity() -> u32 {
-    3
+    10
 }
 
 impl ZoneCapacities {

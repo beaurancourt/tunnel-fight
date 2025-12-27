@@ -4,6 +4,8 @@ A generic OSR (Old School Renaissance) combat simulator. Like [SimulationCraft](
 
 Run thousands of combat simulations to analyze encounter balance, optimize character builds, and test formations.
 
+**Try it now: https://tunnel-fight.web.app**
+
 ## Features
 
 - **Zone-based positioning**: Linear 6-zone combat system (ranged → reach → melee)

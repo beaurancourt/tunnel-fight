@@ -1,0 +1,62 @@
+name: Party vs Goblins
+iterations: 1000
+
+# Zone capacity limits (optional - these are the defaults)
+zone_capacity:
+  ranged: ~      # null means infinite
+  reach: 3
+  melee: 3
+
+side1:
+  - name: Fighter
+    hp: 12
+    ac: 16
+    attack_bonus: 5
+    damage: 1d8+3
+    speed: 1
+    range: melee
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: lowest_hp_enemy
+      - action: move
+        target: nearest_enemy
+
+  - name: Ranger
+    hp: 9
+    ac: 14
+    attack_bonus: 5
+    damage: 1d8+2
+    speed: 1
+    range: ranged
+    apl:
+      - action: attack
+        if: enemy.in_range
+        target: nearest_enemy
+      - action: move
+        target: nearest_enemy
+
+side2:
+  - name: Goblin 1
+    hp: 7
+    ac: 13
+    attack_bonus: 4
+    damage: 1d6+2
+    speed: 1
+    range: melee
+
+  - name: Goblin 2
+    hp: 7
+    ac: 13
+    attack_bonus: 4
+    damage: 1d6+2
+    speed: 1
+    range: melee
+
+  - name: Goblin 3
+    hp: 7
+    ac: 13
+    attack_bonus: 4
+    damage: 1d6+2
+    speed: 1
+    range: melee

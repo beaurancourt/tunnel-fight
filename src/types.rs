@@ -7,12 +7,49 @@ pub enum InitiativeType {
     /// One side acts completely, then the other (re-rolled each round)
     #[default]
     Side,
-    /// Each actor rolls d20 + modifier, acts in order (re-rolled each round)
+    /// Each actor rolls initiative dice + modifier, acts in order (re-rolled each round)
     Individual,
     /// Phases within sides: all side1 move, all side2 move, all side1 ranged, etc.
     SidePhases,
     /// Individual initiative, but actions happen in phases (all movement, then ranged, then melee)
     IndividualPhases,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Phase {
+    Movement,
+    Ranged,
+    Reach,
+    Melee,
+}
+
+fn default_phases() -> Vec<Phase> {
+    vec![Phase::Movement, Phase::Ranged, Phase::Reach, Phase::Melee]
+}
+
+fn default_initiative_dice() -> String {
+    "1d20".to_string()
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct InitiativeConfig {
+    #[serde(rename = "type", default)]
+    pub initiative_type: InitiativeType,
+    #[serde(default = "default_initiative_dice")]
+    pub dice: String,
+    #[serde(default = "default_phases")]
+    pub phases: Vec<Phase>,
+}
+
+impl Default for InitiativeConfig {
+    fn default() -> Self {
+        InitiativeConfig {
+            initiative_type: InitiativeType::default(),
+            dice: default_initiative_dice(),
+            phases: default_phases(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -363,7 +400,7 @@ pub struct Encounter {
     #[serde(default)]
     pub zone_capacity: ZoneCapacities,
     #[serde(default)]
-    pub initiative: InitiativeType,
+    pub initiative: InitiativeConfig,
 }
 
 fn default_iterations() -> u32 {

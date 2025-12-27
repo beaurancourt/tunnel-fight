@@ -1,7 +1,7 @@
 use rand::Rng;
 
 use crate::apl::{execute_apl, AttackAction, MoveAction, MoveDirection};
-use crate::types::{Actor, Encounter, InitiativeType, Side, WeaponRange, Zone, ZoneCapacities};
+use crate::types::{Actor, DamageDice, Encounter, InitiativeType, Phase, Side, WeaponRange, Zone, ZoneCapacities, parse_damage_dice};
 
 #[derive(Debug, Clone)]
 pub struct CombatEvent {
@@ -56,6 +56,8 @@ pub struct CombatSimulator {
     max_rounds: u32,
     zone_capacity: ZoneCapacities,
     initiative_type: InitiativeType,
+    initiative_dice: DamageDice,
+    phases: Vec<Phase>,
 }
 
 impl CombatSimulator {
@@ -73,13 +75,18 @@ impl CombatSimulator {
             id += 1;
         }
 
+        let initiative_dice = parse_damage_dice(&encounter.initiative.dice)
+            .unwrap_or(DamageDice { count: 1, sides: 20, modifier: 0 });
+
         CombatSimulator {
             actors,
             events: Vec::new(),
             round: 0,
             max_rounds,
             zone_capacity: encounter.zone_capacity.clone(),
-            initiative_type: encounter.initiative,
+            initiative_type: encounter.initiative.initiative_type,
+            initiative_dice,
+            phases: encounter.initiative.phases.clone(),
         }
     }
 
@@ -169,7 +176,7 @@ impl CombatSimulator {
         }
     }
 
-    /// Individual initiative: each actor rolls d20 + modifier
+    /// Individual initiative: each actor rolls initiative dice + modifier
     fn run_round_individual(&mut self, rng: &mut impl Rng) {
         // Roll initiative for each actor
         let mut initiatives: Vec<(usize, i32)> = self
@@ -177,7 +184,7 @@ impl CombatSimulator {
             .iter()
             .filter(|a| a.is_alive())
             .map(|a| {
-                let roll = rng.gen_range(1..=20) + a.initiative_modifier;
+                let roll = self.initiative_dice.roll(rng) + a.initiative_modifier;
                 (a.id, roll)
             })
             .collect();
@@ -198,57 +205,61 @@ impl CombatSimulator {
         }
     }
 
-    /// Side-based phases: movement phase, then ranged phase, then melee phase for each side
+    /// Side-based phases: each phase executes for both sides before moving to the next
     fn run_round_side_phases(&mut self, rng: &mut impl Rng) {
         // Determine which side goes first (50/50)
         let first_side = if rng.gen_bool(0.5) { Side::Side1 } else { Side::Side2 };
         let second_side = first_side.opposite();
 
-        // Phase 1: Movement (both sides)
-        for side in [first_side, second_side] {
-            let order = self.get_shuffled_side_order(side, rng);
-            for actor_id in order {
-                self.execute_movement_only(actor_id, rng);
-            }
-        }
-
-        if self.is_combat_over() { return; }
-
-        // Phase 2: Ranged attacks (both sides)
-        for side in [first_side, second_side] {
-            let order = self.get_shuffled_side_order(side, rng);
-            for actor_id in order {
-                if self.actors[actor_id].range == WeaponRange::Ranged {
-                    self.execute_attack_only(actor_id, rng);
-                    if self.is_combat_over() { return; }
+        for phase in self.phases.clone() {
+            match phase {
+                Phase::Movement => {
+                    for side in [first_side, second_side] {
+                        let order = self.get_shuffled_side_order(side, rng);
+                        for actor_id in order {
+                            self.execute_movement_only(actor_id, rng);
+                        }
+                    }
+                }
+                Phase::Ranged => {
+                    for side in [first_side, second_side] {
+                        let order = self.get_shuffled_side_order(side, rng);
+                        for actor_id in order {
+                            if self.actors[actor_id].range == WeaponRange::Ranged {
+                                self.execute_attack_only(actor_id, rng);
+                                if self.is_combat_over() { return; }
+                            }
+                        }
+                    }
+                }
+                Phase::Reach => {
+                    for side in [first_side, second_side] {
+                        let order = self.get_shuffled_side_order(side, rng);
+                        for actor_id in order {
+                            if self.actors[actor_id].range == WeaponRange::Reach {
+                                self.execute_attack_only(actor_id, rng);
+                                if self.is_combat_over() { return; }
+                            }
+                        }
+                    }
+                }
+                Phase::Melee => {
+                    for side in [first_side, second_side] {
+                        let order = self.get_shuffled_side_order(side, rng);
+                        for actor_id in order {
+                            if self.actors[actor_id].range == WeaponRange::Melee {
+                                self.execute_attack_only(actor_id, rng);
+                                if self.is_combat_over() { return; }
+                            }
+                        }
+                    }
                 }
             }
-        }
-
-        // Phase 3: Reach attacks (both sides)
-        for side in [first_side, second_side] {
-            let order = self.get_shuffled_side_order(side, rng);
-            for actor_id in order {
-                if self.actors[actor_id].range == WeaponRange::Reach {
-                    self.execute_attack_only(actor_id, rng);
-                    if self.is_combat_over() { return; }
-                }
-            }
-        }
-
-        // Phase 4: Melee attacks (both sides)
-        for side in [first_side, second_side] {
-            let order = self.get_shuffled_side_order(side, rng);
-            for actor_id in order {
-                if self.actors[actor_id].range == WeaponRange::Melee {
-                    self.execute_attack_only(actor_id, rng);
-                    if self.is_combat_over() { return; }
-                }
-            }
+            if self.is_combat_over() { return; }
         }
     }
 
-    /// Individual phases: all movement in init order, then ranged, then reach, then melee
+    /// Individual phases: each phase executes in initiative order before moving to the next
     fn run_round_individual_phases(&mut self, rng: &mut impl Rng) {
         // Roll initiative for each actor
         let mut initiatives: Vec<(usize, i32)> = self
@@ -256,7 +267,7 @@ impl CombatSimulator {
             .iter()
             .filter(|a| a.is_alive())
             .map(|a| {
-                let roll = rng.gen_range(1..=20) + a.initiative_modifier;
+                let roll = self.initiative_dice.roll(rng) + a.initiative_modifier;
                 (a.id, roll)
             })
             .collect();
@@ -268,37 +279,41 @@ impl CombatSimulator {
 
         let order: Vec<usize> = initiatives.iter().map(|(id, _)| *id).collect();
 
-        // Phase 1: Movement
-        for &actor_id in &order {
-            if self.actors[actor_id].is_alive() {
-                self.execute_movement_only(actor_id, rng);
+        for phase in self.phases.clone() {
+            match phase {
+                Phase::Movement => {
+                    for &actor_id in &order {
+                        if self.actors[actor_id].is_alive() {
+                            self.execute_movement_only(actor_id, rng);
+                        }
+                    }
+                }
+                Phase::Ranged => {
+                    for &actor_id in &order {
+                        if self.actors[actor_id].is_alive() && self.actors[actor_id].range == WeaponRange::Ranged {
+                            self.execute_attack_only(actor_id, rng);
+                            if self.is_combat_over() { return; }
+                        }
+                    }
+                }
+                Phase::Reach => {
+                    for &actor_id in &order {
+                        if self.actors[actor_id].is_alive() && self.actors[actor_id].range == WeaponRange::Reach {
+                            self.execute_attack_only(actor_id, rng);
+                            if self.is_combat_over() { return; }
+                        }
+                    }
+                }
+                Phase::Melee => {
+                    for &actor_id in &order {
+                        if self.actors[actor_id].is_alive() && self.actors[actor_id].range == WeaponRange::Melee {
+                            self.execute_attack_only(actor_id, rng);
+                            if self.is_combat_over() { return; }
+                        }
+                    }
+                }
             }
-        }
-
-        if self.is_combat_over() { return; }
-
-        // Phase 2: Ranged attacks
-        for &actor_id in &order {
-            if self.actors[actor_id].is_alive() && self.actors[actor_id].range == WeaponRange::Ranged {
-                self.execute_attack_only(actor_id, rng);
-                if self.is_combat_over() { return; }
-            }
-        }
-
-        // Phase 3: Reach attacks
-        for &actor_id in &order {
-            if self.actors[actor_id].is_alive() && self.actors[actor_id].range == WeaponRange::Reach {
-                self.execute_attack_only(actor_id, rng);
-                if self.is_combat_over() { return; }
-            }
-        }
-
-        // Phase 4: Melee attacks
-        for &actor_id in &order {
-            if self.actors[actor_id].is_alive() && self.actors[actor_id].range == WeaponRange::Melee {
-                self.execute_attack_only(actor_id, rng);
-                if self.is_combat_over() { return; }
-            }
+            if self.is_combat_over() { return; }
         }
     }
 

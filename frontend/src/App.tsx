@@ -153,16 +153,32 @@ function Docs({ onClose }: { onClose: () => void }) {
 
         <section>
           <h3>Initiative Systems</h3>
-          <p>Configure with <code>initiative:</code> at encounter level:</p>
+          <p>Configure under the <code>initiative:</code> block:</p>
+          <h4>Types</h4>
           <table>
             <tbody>
               <tr><td><code>side</code></td><td>One side acts completely, then the other (default)</td></tr>
-              <tr><td><code>individual</code></td><td>Each actor rolls d20 + modifier, acts in order</td></tr>
-              <tr><td><code>side_phases</code></td><td>Phased combat by side: all movement, then ranged, reach, melee</td></tr>
-              <tr><td><code>individual_phases</code></td><td>Phased combat by initiative: movement phase, then attack phases by weapon type</td></tr>
+              <tr><td><code>individual</code></td><td>Each actor rolls initiative dice + modifier, acts in order</td></tr>
+              <tr><td><code>side_phases</code></td><td>Phased combat by side: phases execute in order for each side</td></tr>
+              <tr><td><code>individual_phases</code></td><td>Phased combat: phases execute in order, actors act by initiative within each phase</td></tr>
             </tbody>
           </table>
-          <pre>{`initiative: individual  # or side, side_phases, individual_phases`}</pre>
+          <h4>Options</h4>
+          <table>
+            <tbody>
+              <tr><td><code>type</code></td><td>Initiative type (see above)</td></tr>
+              <tr><td><code>dice</code></td><td>Dice formula for rolls (default: 1d20)</td></tr>
+              <tr><td><code>phases</code></td><td>Phase order for phase-based systems</td></tr>
+            </tbody>
+          </table>
+          <h4>Example</h4>
+          <pre>{`initiative:
+  type: individual_phases
+  dice: 1d6
+  phases:
+    - movement
+    - ranged
+    - melee`}</pre>
         </section>
 
         <section>

@@ -2,6 +2,8 @@
 name = "tunnel-fight"
 version = "0.1.0"
 edition = "2021"
+license = "MIT"
+description = "OSR combat simulator for tabletop RPGs"
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }

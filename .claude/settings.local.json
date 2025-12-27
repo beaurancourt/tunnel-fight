@@ -27,7 +27,8 @@
       "Bash(gh run list:*)",
       "Bash(gcloud services enable:*)",
       "Bash(gcloud run deploy:*)",
-      "Bash(gcloud projects add-iam-policy-binding:*)"
+      "Bash(gcloud projects add-iam-policy-binding:*)",
+      "Bash(curl:*)"
     ],
     "deny": [],
     "ask": []

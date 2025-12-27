@@ -1,32 +1,32 @@
-name: Fighter vs Orc (1v1)
-iterations: 30000
+    name: Fighter vs Orc (1v1)
+    iterations: 30000
 
-side1:
-  - name: Fighter
-    hp: 8
-    ac: 18
-    attack_bonus: 1
-    damage: 1d8+1
-    speed: 1
-    range: melee
-    start_zone: melee
-    apl:
-      - action: attack
-        if: enemy.in_range
-      - action: move
-        target: nearest_enemy
+    side1:
+      - name: Fighter
+        hp: 1d8
+        ac: 17
+        attack_bonus: 0
+        damage: 1d8
+        speed: 1
+        range: melee
+        start_zone: melee
+        apl:
+          - action: attack
+            if: enemy.in_range
+          - action: move
+            target: nearest_enemy
 
-side2:
-  - name: Orc
-    hp: 8
-    ac: 13
-    attack_bonus: 0
-    damage: 1d6
-    speed: 1
-    range: melee
-    start_zone: melee
-    apl:
-      - action: attack
-        if: enemy.in_range
-      - action: move
-        target: nearest_enemy
+    side2:
+      - name: Orc
+        hp: 1d8
+        ac: 13
+        attack_bonus: 0
+        damage: 1d6
+        speed: 1
+        range: melee
+        start_zone: melee
+        apl:
+          - action: attack
+            if: enemy.in_range
+          - action: move
+            target: nearest_enemy

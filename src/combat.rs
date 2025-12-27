@@ -96,6 +96,16 @@ impl CombatSimulator {
         }
     }
 
+    fn zone_has_enemies(&self, zone: Zone, actor_side: Side) -> bool {
+        self.actors
+            .iter()
+            .any(|a| a.zone == zone && a.is_alive() && a.side != actor_side)
+    }
+
+    fn can_enter_zone(&self, zone: Zone, actor_id: usize, actor_side: Side) -> bool {
+        self.zone_has_capacity(zone, actor_id) && !self.zone_has_enemies(zone, actor_side)
+    }
+
     pub fn run(&mut self, rng: &mut impl Rng) -> CombatResult {
         while !self.is_combat_over() && self.round < self.max_rounds {
             self.round += 1;
@@ -224,6 +234,7 @@ impl CombatSimulator {
         let actor = &self.actors[actor_id];
         let from_zone = actor.zone;
         let speed = actor.speed;
+        let actor_side = actor.side;
 
         let to_zone = match direction {
             MoveDirection::Toward(target_id) => {
@@ -231,10 +242,10 @@ impl CombatSimulator {
                 let mut current = from_zone;
                 for _ in 0..speed {
                     if let Some(next) = current.toward(&target.zone) {
-                        if self.zone_has_capacity(next, actor_id) {
+                        if self.can_enter_zone(next, actor_id, actor_side) {
                             current = next;
                         } else {
-                            break; // Zone is full, stop moving
+                            break; // Zone is full or has enemies, stop moving
                         }
                     } else {
                         break;
@@ -246,7 +257,7 @@ impl CombatSimulator {
                 let mut current = from_zone;
                 for _ in 0..speed {
                     if let Some(next) = current.toward(&zone) {
-                        if self.zone_has_capacity(next, actor_id) {
+                        if self.can_enter_zone(next, actor_id, actor_side) {
                             current = next;
                         } else {
                             break;
@@ -258,14 +269,14 @@ impl CombatSimulator {
                 current
             }
             MoveDirection::Forward => {
-                let target_zone = match actor.side {
+                let target_zone = match actor_side {
                     Side::Side1 => Zone::Side2Ranged,
                     Side::Side2 => Zone::Side1Ranged,
                 };
                 let mut current = from_zone;
                 for _ in 0..speed {
                     if let Some(next) = current.toward(&target_zone) {
-                        if self.zone_has_capacity(next, actor_id) {
+                        if self.can_enter_zone(next, actor_id, actor_side) {
                             current = next;
                         } else {
                             break;
@@ -277,14 +288,14 @@ impl CombatSimulator {
                 current
             }
             MoveDirection::Backward => {
-                let target_zone = match actor.side {
+                let target_zone = match actor_side {
                     Side::Side1 => Zone::Side1Ranged,
                     Side::Side2 => Zone::Side2Ranged,
                 };
                 let mut current = from_zone;
                 for _ in 0..speed {
                     if let Some(next) = current.toward(&target_zone) {
-                        if self.zone_has_capacity(next, actor_id) {
+                        if self.can_enter_zone(next, actor_id, actor_side) {
                             current = next;
                         } else {
                             break;

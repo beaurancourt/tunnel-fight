@@ -216,7 +216,8 @@ function App() {
     setLoading(true)
     setError(null)
     try {
-      const response = await axios.post<SimulationResult>('http://localhost:3000/simulate', {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+      const response = await axios.post<SimulationResult>(`${apiUrl}/simulate`, {
         encounter_yaml: yaml,
         sample_count: 5
       })

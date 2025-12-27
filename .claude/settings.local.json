@@ -21,7 +21,13 @@
       "Bash(firebase hosting:sites:list:*)",
       "Bash(gcloud iam service-accounts list:*)",
       "Bash(gcloud auth login:*)",
-      "Bash(firebase deploy:*)"
+      "Bash(firebase deploy:*)",
+      "Bash(git rm:*)",
+      "Bash(git commit:*)",
+      "Bash(gh run list:*)",
+      "Bash(gcloud services enable:*)",
+      "Bash(gcloud run deploy:*)",
+      "Bash(gcloud projects add-iam-policy-binding:*)"
     ],
     "deny": [],
     "ask": []

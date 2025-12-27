@@ -146,8 +146,23 @@ function Docs({ onClose }: { onClose: () => void }) {
               <tr><td><code>speed</code></td><td>Zones moved per turn (default: 1)</td></tr>
               <tr><td><code>range</code></td><td>melee (adjacent), reach (2 zones), ranged (2+ zones)</td></tr>
               <tr><td><code>start_zone</code></td><td>ranged (default), reach, melee</td></tr>
+              <tr><td><code>initiative_modifier</code></td><td>Bonus to initiative roll (default: 0)</td></tr>
             </tbody>
           </table>
+        </section>
+
+        <section>
+          <h3>Initiative Systems</h3>
+          <p>Configure with <code>initiative:</code> at encounter level:</p>
+          <table>
+            <tbody>
+              <tr><td><code>side</code></td><td>One side acts completely, then the other (default)</td></tr>
+              <tr><td><code>individual</code></td><td>Each actor rolls d20 + modifier, acts in order</td></tr>
+              <tr><td><code>side_phases</code></td><td>Phased combat by side: all movement, then ranged, reach, melee</td></tr>
+              <tr><td><code>individual_phases</code></td><td>Phased combat by initiative: movement phase, then attack phases by weapon type</td></tr>
+            </tbody>
+          </table>
+          <pre>{`initiative: individual  # or side, side_phases, individual_phases`}</pre>
         </section>
 
         <section>

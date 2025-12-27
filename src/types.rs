@@ -1,6 +1,20 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum InitiativeType {
+    /// One side acts completely, then the other (re-rolled each round)
+    #[default]
+    Side,
+    /// Each actor rolls d20 + modifier, acts in order (re-rolled each round)
+    Individual,
+    /// Phases within sides: all side1 move, all side2 move, all side1 ranged, etc.
+    SidePhases,
+    /// Individual initiative, but actions happen in phases (all movement, then ranged, then melee)
+    IndividualPhases,
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Side {
@@ -211,6 +225,8 @@ pub struct ActorTemplate {
     #[serde(default)]
     pub start_zone: StartingZone,
     #[serde(default)]
+    pub initiative_modifier: i32,
+    #[serde(default)]
     pub apl: Vec<AplEntry>,
 }
 
@@ -253,6 +269,7 @@ pub struct Actor {
     pub speed: u32,
     pub range: WeaponRange,
     pub zone: Zone,
+    pub initiative_modifier: i32,
     pub apl: Vec<AplEntry>,
 }
 
@@ -279,6 +296,7 @@ impl Actor {
             speed: template.speed,
             range: template.range,
             zone,
+            initiative_modifier: template.initiative_modifier,
             apl: template.apl.clone(),
         }
     }
@@ -344,6 +362,8 @@ pub struct Encounter {
     pub iterations: u32,
     #[serde(default)]
     pub zone_capacity: ZoneCapacities,
+    #[serde(default)]
+    pub initiative: InitiativeType,
 }
 
 fn default_iterations() -> u32 {

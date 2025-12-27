@@ -1,7 +1,7 @@
 use rand::Rng;
 
 use crate::apl::{execute_apl, AttackAction, MoveAction, MoveDirection};
-use crate::types::{Actor, Encounter, Side, Zone, ZoneCapacities};
+use crate::types::{Actor, Encounter, InitiativeType, Side, WeaponRange, Zone, ZoneCapacities};
 
 #[derive(Debug, Clone)]
 pub struct CombatEvent {
@@ -55,6 +55,7 @@ pub struct CombatSimulator {
     round: u32,
     max_rounds: u32,
     zone_capacity: ZoneCapacities,
+    initiative_type: InitiativeType,
 }
 
 impl CombatSimulator {
@@ -78,6 +79,7 @@ impl CombatSimulator {
             round: 0,
             max_rounds,
             zone_capacity: encounter.zone_capacity.clone(),
+            initiative_type: encounter.initiative,
         }
     }
 
@@ -109,7 +111,12 @@ impl CombatSimulator {
     pub fn run(&mut self, rng: &mut impl Rng) -> CombatResult {
         while !self.is_combat_over() && self.round < self.max_rounds {
             self.round += 1;
-            self.run_round(rng);
+            match self.initiative_type {
+                InitiativeType::Side => self.run_round_side(rng),
+                InitiativeType::Individual => self.run_round_individual(rng),
+                InitiativeType::SidePhases => self.run_round_side_phases(rng),
+                InitiativeType::IndividualPhases => self.run_round_individual_phases(rng),
+            }
         }
 
         CombatResult {
@@ -132,51 +139,242 @@ impl CombatSimulator {
         }
     }
 
-    fn run_round(&mut self, rng: &mut impl Rng) {
-        // Simple initiative: randomize order each round
-        let mut order: Vec<usize> = self
+    /// Side-based initiative: one side acts completely, then the other
+    fn run_round_side(&mut self, rng: &mut impl Rng) {
+        // Determine which side goes first (50/50)
+        let first_side = if rng.gen_bool(0.5) { Side::Side1 } else { Side::Side2 };
+        let second_side = first_side.opposite();
+
+        for side in [first_side, second_side] {
+            // Get actors for this side, shuffled
+            let mut order: Vec<usize> = self
+                .actors
+                .iter()
+                .filter(|a| a.is_alive() && a.side == side)
+                .map(|a| a.id)
+                .collect();
+
+            // Fisher-Yates shuffle
+            for i in (1..order.len()).rev() {
+                let j = rng.gen_range(0..=i);
+                order.swap(i, j);
+            }
+
+            for actor_id in order {
+                self.execute_full_turn(actor_id, rng);
+                if self.is_combat_over() {
+                    return;
+                }
+            }
+        }
+    }
+
+    /// Individual initiative: each actor rolls d20 + modifier
+    fn run_round_individual(&mut self, rng: &mut impl Rng) {
+        // Roll initiative for each actor
+        let mut initiatives: Vec<(usize, i32)> = self
             .actors
             .iter()
             .filter(|a| a.is_alive())
+            .map(|a| {
+                let roll = rng.gen_range(1..=20) + a.initiative_modifier;
+                (a.id, roll)
+            })
+            .collect();
+
+        // Sort by initiative (highest first), with random tiebreaker
+        initiatives.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| {
+            if rng.gen_bool(0.5) { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater }
+        }));
+
+        for (actor_id, _) in initiatives {
+            if !self.actors[actor_id].is_alive() {
+                continue;
+            }
+            self.execute_full_turn(actor_id, rng);
+            if self.is_combat_over() {
+                return;
+            }
+        }
+    }
+
+    /// Side-based phases: movement phase, then ranged phase, then melee phase for each side
+    fn run_round_side_phases(&mut self, rng: &mut impl Rng) {
+        // Determine which side goes first (50/50)
+        let first_side = if rng.gen_bool(0.5) { Side::Side1 } else { Side::Side2 };
+        let second_side = first_side.opposite();
+
+        // Phase 1: Movement (both sides)
+        for side in [first_side, second_side] {
+            let order = self.get_shuffled_side_order(side, rng);
+            for actor_id in order {
+                self.execute_movement_only(actor_id, rng);
+            }
+        }
+
+        if self.is_combat_over() { return; }
+
+        // Phase 2: Ranged attacks (both sides)
+        for side in [first_side, second_side] {
+            let order = self.get_shuffled_side_order(side, rng);
+            for actor_id in order {
+                if self.actors[actor_id].range == WeaponRange::Ranged {
+                    self.execute_attack_only(actor_id, rng);
+                    if self.is_combat_over() { return; }
+                }
+            }
+        }
+
+        // Phase 3: Reach attacks (both sides)
+        for side in [first_side, second_side] {
+            let order = self.get_shuffled_side_order(side, rng);
+            for actor_id in order {
+                if self.actors[actor_id].range == WeaponRange::Reach {
+                    self.execute_attack_only(actor_id, rng);
+                    if self.is_combat_over() { return; }
+                }
+            }
+        }
+
+        // Phase 4: Melee attacks (both sides)
+        for side in [first_side, second_side] {
+            let order = self.get_shuffled_side_order(side, rng);
+            for actor_id in order {
+                if self.actors[actor_id].range == WeaponRange::Melee {
+                    self.execute_attack_only(actor_id, rng);
+                    if self.is_combat_over() { return; }
+                }
+            }
+        }
+    }
+
+    /// Individual phases: all movement in init order, then ranged, then reach, then melee
+    fn run_round_individual_phases(&mut self, rng: &mut impl Rng) {
+        // Roll initiative for each actor
+        let mut initiatives: Vec<(usize, i32)> = self
+            .actors
+            .iter()
+            .filter(|a| a.is_alive())
+            .map(|a| {
+                let roll = rng.gen_range(1..=20) + a.initiative_modifier;
+                (a.id, roll)
+            })
+            .collect();
+
+        // Sort by initiative (highest first)
+        initiatives.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| {
+            if rng.gen_bool(0.5) { std::cmp::Ordering::Less } else { std::cmp::Ordering::Greater }
+        }));
+
+        let order: Vec<usize> = initiatives.iter().map(|(id, _)| *id).collect();
+
+        // Phase 1: Movement
+        for &actor_id in &order {
+            if self.actors[actor_id].is_alive() {
+                self.execute_movement_only(actor_id, rng);
+            }
+        }
+
+        if self.is_combat_over() { return; }
+
+        // Phase 2: Ranged attacks
+        for &actor_id in &order {
+            if self.actors[actor_id].is_alive() && self.actors[actor_id].range == WeaponRange::Ranged {
+                self.execute_attack_only(actor_id, rng);
+                if self.is_combat_over() { return; }
+            }
+        }
+
+        // Phase 3: Reach attacks
+        for &actor_id in &order {
+            if self.actors[actor_id].is_alive() && self.actors[actor_id].range == WeaponRange::Reach {
+                self.execute_attack_only(actor_id, rng);
+                if self.is_combat_over() { return; }
+            }
+        }
+
+        // Phase 4: Melee attacks
+        for &actor_id in &order {
+            if self.actors[actor_id].is_alive() && self.actors[actor_id].range == WeaponRange::Melee {
+                self.execute_attack_only(actor_id, rng);
+                if self.is_combat_over() { return; }
+            }
+        }
+    }
+
+    fn get_shuffled_side_order(&self, side: Side, rng: &mut impl Rng) -> Vec<usize> {
+        let mut order: Vec<usize> = self
+            .actors
+            .iter()
+            .filter(|a| a.is_alive() && a.side == side)
             .map(|a| a.id)
             .collect();
 
-        // Fisher-Yates shuffle
         for i in (1..order.len()).rev() {
             let j = rng.gen_range(0..=i);
             order.swap(i, j);
         }
+        order
+    }
 
-        for actor_id in order {
-            if !self.actors[actor_id].is_alive() {
-                continue;
-            }
+    /// Execute a full turn: move then attack
+    fn execute_full_turn(&mut self, actor_id: usize, rng: &mut impl Rng) {
+        if !self.actors[actor_id].is_alive() {
+            return;
+        }
 
-            if self.is_combat_over() {
-                break;
-            }
+        // Get initial actions based on current state
+        let turn_actions = {
+            let actor = &self.actors[actor_id];
+            execute_apl(actor, &self.actors, rng)
+        };
 
-            // Get initial actions based on current state
-            let turn_actions = {
-                let actor = &self.actors[actor_id];
-                execute_apl(actor, &self.actors, rng)
-            };
+        // Execute move first
+        if let MoveAction::Move { direction } = turn_actions.move_action {
+            self.execute_move(actor_id, direction);
+        }
 
-            // Execute move first
-            if let MoveAction::Move { direction } = turn_actions.move_action {
-                self.execute_move(actor_id, direction);
-            }
+        // Re-evaluate for attack after moving (position may have changed)
+        let attack_action = {
+            let actor = &self.actors[actor_id];
+            execute_apl(actor, &self.actors, rng).attack_action
+        };
 
-            // Re-evaluate for attack after moving (position may have changed)
-            let attack_action = {
-                let actor = &self.actors[actor_id];
-                execute_apl(actor, &self.actors, rng).attack_action
-            };
+        // Execute attack
+        if let AttackAction::Attack { target_id } = attack_action {
+            self.execute_attack(actor_id, target_id, rng);
+        }
+    }
 
-            // Execute attack
-            if let AttackAction::Attack { target_id } = attack_action {
-                self.execute_attack(actor_id, target_id, rng);
-            }
+    /// Execute only the movement portion of a turn
+    fn execute_movement_only(&mut self, actor_id: usize, rng: &mut impl Rng) {
+        if !self.actors[actor_id].is_alive() {
+            return;
+        }
+
+        let turn_actions = {
+            let actor = &self.actors[actor_id];
+            execute_apl(actor, &self.actors, rng)
+        };
+
+        if let MoveAction::Move { direction } = turn_actions.move_action {
+            self.execute_move(actor_id, direction);
+        }
+    }
+
+    /// Execute only the attack portion of a turn
+    fn execute_attack_only(&mut self, actor_id: usize, rng: &mut impl Rng) {
+        if !self.actors[actor_id].is_alive() {
+            return;
+        }
+
+        let attack_action = {
+            let actor = &self.actors[actor_id];
+            execute_apl(actor, &self.actors, rng).attack_action
+        };
+
+        if let AttackAction::Attack { target_id } = attack_action {
+            self.execute_attack(actor_id, target_id, rng);
         }
     }
 
@@ -245,7 +443,7 @@ impl CombatSimulator {
                         if self.can_enter_zone(next, actor_id, actor_side) {
                             current = next;
                         } else {
-                            break; // Zone is full or has enemies, stop moving
+                            break;
                         }
                     } else {
                         break;
@@ -350,7 +548,7 @@ impl CombatSimulator {
         match (side1_alive, side2_alive) {
             (true, false) => Some(Side::Side1),
             (false, true) => Some(Side::Side2),
-            _ => None, // Draw or both alive (max rounds reached)
+            _ => None,
         }
     }
 }

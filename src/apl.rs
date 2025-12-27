@@ -9,6 +9,7 @@ pub enum MoveAction {
 #[derive(Debug, Clone)]
 pub enum AttackAction {
     Attack { target_id: usize },
+    Guard,
     None,
 }
 
@@ -209,6 +210,12 @@ pub fn execute_apl(actor: &Actor, actors: &[Actor], rng: &mut impl rand::Rng) ->
                             }
                         }
                     }
+                }
+            }
+            "guard" | "defend" => {
+                // Guard action replaces attack - raises AC by 2 for the round
+                if matches!(attack_action, AttackAction::None) {
+                    attack_action = AttackAction::Guard;
                 }
             }
             _ => {}

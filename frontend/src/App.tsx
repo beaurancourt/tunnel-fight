@@ -191,6 +191,7 @@ function Docs({ onClose }: { onClose: () => void }) {
           <table>
             <tbody>
               <tr><td><code>attack</code></td><td>Attack an enemy (must be in range)</td></tr>
+              <tr><td><code>guard</code></td><td>Raise AC by 2 until next turn</td></tr>
               <tr><td><code>move</code></td><td>Move toward a target or direction</td></tr>
             </tbody>
           </table>

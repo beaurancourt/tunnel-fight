@@ -307,6 +307,7 @@ pub struct Actor {
     pub max_hp: i32,
     pub current_hp: i32,
     pub ac: i32,
+    pub ac_bonus: i32,  // Temporary AC bonus (e.g., from guarding)
     pub attack_bonus: i32,
     pub damage: DamageDice,
     pub speed: u32,
@@ -335,6 +336,7 @@ impl Actor {
             max_hp: hp,
             current_hp: hp,
             ac: template.ac,
+            ac_bonus: 0,
             attack_bonus: template.attack_bonus,
             damage: template.damage.clone(),
             speed: template.speed,
@@ -348,6 +350,10 @@ impl Actor {
 
     pub fn is_alive(&self) -> bool {
         self.current_hp > 0
+    }
+
+    pub fn effective_ac(&self) -> i32 {
+        self.ac + self.ac_bonus
     }
 
     pub fn can_attack(&self, target: &Actor) -> bool {

@@ -224,6 +224,9 @@ fn format_combat_log(result: &CombatResult) -> CombatLog {
                         )
                     }
                 }
+                EventType::Guard { ac_bonus } => {
+                    format!("guards (AC +{})", ac_bonus)
+                }
                 EventType::Move { from, to } => {
                     format!("moves from {:?} to {:?}", from, to)
                 }

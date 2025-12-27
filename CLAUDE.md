@@ -64,6 +64,7 @@ apl:
 | Action   | Description                          | Target Required |
 |----------|--------------------------------------|-----------------|
 | `attack` | Attack an enemy (must be in range)   | Yes             |
+| `guard`  | Raise AC by 2 until next turn        | No              |
 | `move`   | Move toward a target or direction    | Yes             |
 
 #### Conditions (`if`)

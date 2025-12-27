@@ -21,6 +21,9 @@ pub enum EventType {
         hit: bool,
         damage: i32,
     },
+    Guard {
+        ac_bonus: i32,
+    },
     Move {
         from: Zone,
         to: Zone,
@@ -339,6 +342,9 @@ impl CombatSimulator {
             return;
         }
 
+        // Clear any temporary AC bonus from previous guard action
+        self.actors[actor_id].ac_bonus = 0;
+
         // Get initial actions based on current state
         let turn_actions = {
             let actor = &self.actors[actor_id];
@@ -356,9 +362,15 @@ impl CombatSimulator {
             execute_apl(actor, &self.actors, rng).attack_action
         };
 
-        // Execute attack
-        if let AttackAction::Attack { target_id } = attack_action {
-            self.execute_attack(actor_id, target_id, rng);
+        // Execute attack or guard
+        match attack_action {
+            AttackAction::Attack { target_id } => {
+                self.execute_attack(actor_id, target_id, rng);
+            }
+            AttackAction::Guard => {
+                self.execute_guard(actor_id);
+            }
+            AttackAction::None => {}
         }
     }
 
@@ -384,13 +396,22 @@ impl CombatSimulator {
             return;
         }
 
+        // Clear any temporary AC bonus from previous guard action
+        self.actors[actor_id].ac_bonus = 0;
+
         let attack_action = {
             let actor = &self.actors[actor_id];
             execute_apl(actor, &self.actors, rng).attack_action
         };
 
-        if let AttackAction::Attack { target_id } = attack_action {
-            self.execute_attack(actor_id, target_id, rng);
+        match attack_action {
+            AttackAction::Attack { target_id } => {
+                self.execute_attack(actor_id, target_id, rng);
+            }
+            AttackAction::Guard => {
+                self.execute_guard(actor_id);
+            }
+            AttackAction::None => {}
         }
     }
 
@@ -403,7 +424,8 @@ impl CombatSimulator {
         }
 
         let roll = rng.gen_range(1..=20) + attacker.attack_bonus;
-        let hit = roll >= target.ac;
+        let target_ac = target.effective_ac();
+        let hit = roll >= target_ac;
         let damage = if hit {
             attacker.damage.roll(rng)
         } else {
@@ -412,7 +434,6 @@ impl CombatSimulator {
 
         let attacker_name = attacker.name.clone();
         let target_name = target.name.clone();
-        let target_ac = target.ac;
 
         self.events.push(CombatEvent {
             round: self.round,
@@ -442,6 +463,18 @@ impl CombatSimulator {
                 });
             }
         }
+    }
+
+    fn execute_guard(&mut self, actor_id: usize) {
+        let actor = &mut self.actors[actor_id];
+        actor.ac_bonus = 2;
+
+        self.events.push(CombatEvent {
+            round: self.round,
+            actor_id,
+            actor_name: actor.name.clone(),
+            event_type: EventType::Guard { ac_bonus: 2 },
+        });
     }
 
     fn execute_move(&mut self, actor_id: usize, direction: MoveDirection) {

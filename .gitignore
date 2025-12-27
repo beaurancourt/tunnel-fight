@@ -21,3 +21,4 @@ frontend/dist/
 
 # Firebase
 .firebase/
+firebase-debug.log

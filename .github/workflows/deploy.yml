@@ -6,43 +6,8 @@ on:
       - main
 
 jobs:
-  build-and-deploy-backend:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        with:
-          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
-          service_account: ${{ secrets.WIF_SERVICE_ACCOUNT }}
-
-      - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
-
-      - name: Configure Docker
-        run: gcloud auth configure-docker
-
-      - name: Build and push Docker image
-        run: |
-          docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/tunnel-fight-api .
-          docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/tunnel-fight-api
-
-      - name: Deploy to Cloud Run
-        run: |
-          gcloud run deploy tunnel-fight-api \
-            --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/tunnel-fight-api \
-            --platform managed \
-            --region us-central1 \
-            --allow-unauthenticated
-
-  build-and-deploy-frontend:
-    runs-on: ubuntu-latest
-    needs: build-and-deploy-backend
 
     steps:
       - uses: actions/checkout@v4
@@ -59,8 +24,6 @@ jobs:
 
       - name: Build frontend
         run: cd frontend && npm run build
-        env:
-          VITE_API_URL: https://tunnel-fight-api-${{ secrets.GCP_PROJECT_HASH }}.run.app
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
@@ -68,4 +31,4 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
-          projectId: ${{ secrets.FIREBASE_PROJECT_ID }}
+          projectId: tunnel-fight

@@ -9,7 +9,19 @@
       "Bash(npm install:*)",
       "Bash(npm run build:*)",
       "Bash(git init:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nAdd Firebase hosting and Cloud Run deployment\n\n- Add Firebase Hosting config\n- Add Dockerfile for Cloud Run backend\n- Add GitHub Actions workflow for auto-deploy\n- Update server to use PORT env var\n- Update frontend to use VITE_API_URL env var\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push:*)",
+      "Bash(firebase projects:list:*)",
+      "Bash(firebase projects:create:*)",
+      "Bash(firebase use:*)",
+      "Bash(firebase hosting:github:authorize:*)",
+      "Bash(firebase init:*)",
+      "Bash(pkill:*)",
+      "Bash(firebase hosting:sites:list:*)",
+      "Bash(gcloud iam service-accounts list:*)",
+      "Bash(gcloud auth login:*)",
+      "Bash(firebase deploy:*)"
     ],
     "deny": [],
     "ask": []

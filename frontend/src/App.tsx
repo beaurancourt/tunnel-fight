@@ -63,6 +63,7 @@ side1:
     damage: 1d8+3
     speed: 1
     range: melee
+    start_zone: melee
     apl:
       - action: attack
         if: enemy.in_range
@@ -77,6 +78,7 @@ side1:
     damage: 1d8+2
     speed: 1
     range: ranged
+    start_zone: ranged
     apl:
       - action: attack
         if: enemy.in_range
@@ -92,6 +94,7 @@ side2:
     damage: 1d6+2
     speed: 1
     range: melee
+    start_zone: melee
 
   - name: Goblin 2
     hp: 7
@@ -100,6 +103,7 @@ side2:
     damage: 1d6+2
     speed: 1
     range: melee
+    start_zone: melee
 
   - name: Goblin 3
     hp: 7
@@ -108,6 +112,7 @@ side2:
     damage: 1d6+2
     speed: 1
     range: melee
+    start_zone: melee
 `
 
 function Docs({ onClose }: { onClose: () => void }) {
